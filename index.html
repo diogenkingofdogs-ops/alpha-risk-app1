@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Калькулятор риска by Alpha</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      :root {
+        --bg: #020617;
+        --bg-soft: rgba(255, 255, 255, 0.05);
+        --bg-card: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #ffffff;
+        --muted: rgba(255, 255, 255, 0.58);
+        --violet: #a855f7;
+        --violet-soft: rgba(168, 85, 247, 0.14);
+        --green: #34d399;
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at top, rgba(168, 85, 247, 0.18), transparent 32%),
+          linear-gradient(180deg, #0f172a 0%, #020617 48%, #020617 100%);
+      }
+
+      .app {
+        width: min(1120px, calc(100% - 24px));
+        margin: 0 auto;
+        padding: 12px 0 24px;
+      }
+
+      .hero,
+      .panel,
+      .card {
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        border-radius: var(--radius-xl);
+        padding: 20px;
+      }
+
+      .hero-top {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        font-size: 11px;
+        line-height: 1;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #86efac;
+        opacity: 0.86;
+      }
+
+      h1 {
+        margin: 10px 0 0;
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.05;
+      }
+
+      .alpha {
+        color: var(--violet);
+      }
+
+      .subtitle {
+        margin: 12px 0 0;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: 18px;
+        padding: 13px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-soft {
+        background: var(--bg-soft);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      .btn-main {
+        background: #ffffff;
+        color: #0f172a;
+      }
+
+      .status {
+        display: inline-flex;
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: var(--bg-soft);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.02fr 0.98fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .panel {
+        border-radius: var(--radius-xl);
+        padding: 20px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        width: min(220px, 100%);
+        padding: 6px;
+        background: var(--bg-soft);
+        border-radius: 20px;
+        border: 1px solid var(--border);
+      }
+
+      .segmented button {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.66);
+        padding: 12px 10px;
+      }
+
+      .segmented button.active {
+        background: #ffffff;
+        color: #0f172a;
+      }
+
+      .form-grid,
+      .stats-grid,
+      .targets-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .targets-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .field-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.84);
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--bg-soft);
+        color: var(--text);
+        padding: 14px 46px 14px 14px;
+        font-size: 15px;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: rgba(168, 85, 247, 0.58);
+        box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
+      }
+
+      .suffix {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255, 255, 255, 0.44);
+        font-size: 13px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        border-radius: var(--radius-lg);
+        padding: 16px;
+      }
+
+      .card-label {
+        color: rgba(255, 255, 255, 0.52);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 11px;
+      }
+
+      .card-value {
+        margin-top: 10px;
+        font-size: clamp(22px, 3vw, 30px);
+        font-weight: 700;
+      }
+
+      .card-hint {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .target-box {
+        margin-top: 2px;
+      }
+
+      .r-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .pill {
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        border: 1px solid rgba(168, 85, 247, 0.24);
+        background: var(--violet-soft);
+        color: #d8b4fe;
+      }
+
+      .empty {
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-xl);
+        background: var(--bg-soft);
+        color: var(--muted);
+        padding: 22px;
+      }
+
+      @media (max-width: 920px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          width: min(100%, calc(100% - 16px));
+        }
+
+        .hero,
+        .panel {
+          padding: 16px;
+          border-radius: 24px;
+        }
+
+        .form-grid,
+        .stats-grid,
+        .targets-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .section-head,
+        .r-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .segmented {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <section class="hero">
+        <div class="hero-top">
+          <div>
+            <div class="eyebrow">Telegram Mini App</div>
+            <h1>Калькулятор риска by <span class="alpha">Alpha</span></h1>
+            <p class="subtitle">
+              Рассчитывает размер позиции, риск в деньгах, нужную маржу и уровни 1R / 2R / 3R.
+            </p>
+          </div>
+
+          <div class="actions">
+            <button class="btn-soft" id="fullscreenBtn" type="button">Открыть шире</button>
+            <button class="btn-main" id="shareBtn" type="button">Поделиться расчётом</button>
+          </div>
+        </div>
+
+        <div class="status" id="telegramStatus">Режим предпросмотра: в Telegram будут доступны нативные функции Mini App</div>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="section-head">
+            <div class="section-title">Параметры сделки</div>
+            <div class="segmented">
+              <button id="longBtn" class="active" type="button">Long</button>
+              <button id="shortBtn" type="button">Short</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label class="field-label" for="balance">Размер депозита</label>
+              <div class="input-wrap">
+                <input id="balance" type="number" min="0" step="any" value="1000" />
+                <span class="suffix">USDT</span>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="riskPercent">Риск на сделку</label>
+              <div class="input-wrap">
+                <input id="riskPercent" type="number" min="0" step="any" value="1" />
+                <span class="suffix">%</span>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="entryPrice">Цена входа</label>
+              <div class="input-wrap">
+                <input id="entryPrice" type="number" min="0" step="any" value="50000" />
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="stopPrice">Цена стопа</label>
+              <div class="input-wrap">
+                <input id="stopPrice" type="number" min="0" step="any" value="49000" />
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="leverage">Плечо</label>
+              <div class="input-wrap">
+                <input id="leverage" type="number" min="1" step="any" value="10" />
+                <span class="suffix">x</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack" id="results"></div>
+      </section>
+    </div>
+
+    <script>
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+      const state = {
+        direction: 'long',
+      };
+
+      const els = {
+        balance: document.getElementById('balance'),
+        riskPercent: document.getElementById('riskPercent'),
+        entryPrice: document.getElementById('entryPrice'),
+        stopPrice: document.getElementById('stopPrice'),
+        leverage: document.getElementById('leverage'),
+        results: document.getElementById('results'),
+        telegramStatus: document.getElementById('telegramStatus'),
+        longBtn: document.getElementById('longBtn'),
+        shortBtn: document.getElementById('shortBtn'),
+        shareBtn: document.getElementById('shareBtn'),
+        fullscreenBtn: document.getElementById('fullscreenBtn'),
+      };
+
+      function formatNumber(value, digits = 2) {
+        if (!Number.isFinite(value)) return '—';
+        return new Intl.NumberFormat('ru-RU', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: digits,
+        }).format(value);
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function readNumbers() {
+        return {
+          balance: Number(els.balance.value),
+          riskPercent: Number(els.riskPercent.value),
+          entryPrice: Number(els.entryPrice.value),
+          stopPrice: Number(els.stopPrice.value),
+          leverage: Number(els.leverage.value),
+        };
+      }
+
+      function calculate() {
+        const parsed = readNumbers();
+        const validBase =
+          parsed.balance > 0 &&
+          parsed.riskPercent > 0 &&
+          parsed.entryPrice > 0 &&
+          parsed.stopPrice > 0 &&
+          parsed.leverage > 0 &&
+          parsed.entryPrice !== parsed.stopPrice;
+
+        if (!validBase) {
+          return {
+            valid: false,
+            reason: 'Заполни все поля корректно, чтобы увидеть расчёт.',
+          };
+        }
+
+        const stopDistanceAbs = Math.abs(parsed.entryPrice - parsed.stopPrice);
+        const stopDistancePercent = (stopDistanceAbs / parsed.entryPrice) * 100;
+        const riskAmount = parsed.balance * (parsed.riskPercent / 100);
+        const totalRiskPercent = stopDistancePercent;
+        const effectiveRiskFraction = totalRiskPercent / 100;
+
+        if (effectiveRiskFraction <= 0) {
+          return {
+            valid: false,
+            reason: 'Слишком маленькая дистанция до стопа для расчёта.',
+          };
+        }
+
+        const positionValue = riskAmount / effectiveRiskFraction;
+        const quantity = positionValue / parsed.entryPrice;
+        const requiredMargin = positionValue / parsed.leverage;
+        const oneRMove = stopDistanceAbs;
+        const target1 = state.direction === 'long' ? parsed.entryPrice + oneRMove : parsed.entryPrice - oneRMove;
+        const target2 = state.direction === 'long' ? parsed.entryPrice + oneRMove * 2 : parsed.entryPrice - oneRMove * 2;
+        const target3 = state.direction === 'long' ? parsed.entryPrice + oneRMove * 3 : parsed.entryPrice - oneRMove * 3;
+        const grossPnL1R = riskAmount;
+        const grossPnL2R = riskAmount * 2;
+        const grossPnL3R = riskAmount * 3;
+        const tooLargeForBalance = requiredMargin > parsed.balance;
+        const safeRiskPercent = clamp((parsed.balance / requiredMargin) * parsed.riskPercent, 0, 100);
+
+        return {
+          valid: true,
+          parsed,
+          riskAmount,
+          stopDistanceAbs,
+          stopDistancePercent,
+          totalRiskPercent,
+          positionValue,
+          quantity,
+          requiredMargin,
+          tooLargeForBalance,
+          safeRiskPercent,
+          target1,
+          target2,
+          target3,
+          grossPnL1R,
+          grossPnL2R,
+          grossPnL3R,
+        };
+      }
+
+      function card(label, value, hint) {
+        return `
+          <div class="card">
+            <div class="card-label">${label}</div>
+            <div class="card-value">${value}</div>
+            ${hint ? `<div class="card-hint">${hint}</div>` : ''}
+          </div>
+        `;
+      }
+
+      function render() {
+        const numbers = calculate();
+
+        if (!numbers.valid) {
+          els.results.innerHTML = `<div class="empty">${numbers.reason}</div>`;
+          return;
+        }
+
+        els.results.innerHTML = `
+          <div class="stats-grid">
+            ${card('Риск в деньгах', `${formatNumber(numbers.riskAmount, 2)} USDT`, 'Максимум, который ты готов потерять')}
+            ${card('Размер позиции', `${formatNumber(numbers.positionValue, 2)} USDT`, 'Максимальная стоимость позиции по твоему риску')}
+            ${card('Нужная маржа', `${formatNumber(numbers.requiredMargin, 2)} USDT`, numbers.tooLargeForBalance ? `Маржи не хватает. Безопасный риск около ${formatNumber(numbers.safeRiskPercent, 2)}%` : `При плече ${formatNumber(numbers.parsed.leverage, 0)}x`)}
+            ${card('Объём монет', formatNumber(numbers.quantity, 6), 'Количество актива для входа')}
+          </div>
+          <div class="stats-grid">
+            ${card('Стоп дистанция', `${formatNumber(numbers.stopDistancePercent, 3)}%`, `${formatNumber(numbers.stopDistanceAbs, 4)} пункта`) }
+            ${card('Итоговый риск %', `${formatNumber(numbers.totalRiskPercent, 3)}%`, 'Используется в расчёте позиции')}
+          </div>
+          <div class="panel target-box">
+            <div class="r-header">
+              <div>
+                <div class="section-title">Цели по R-модели</div>
+                <div class="subtitle" style="margin-top: 6px; max-width: none;">Уровни берутся как 1R, 2R и 3R от расстояния до стопа.</div>
+              </div>
+              <div class="pill">${state.direction === 'long' ? 'Long setup' : 'Short setup'}</div>
+            </div>
+            <div class="targets-grid">
+              ${card('1R', formatNumber(numbers.target1, 4), `≈ ${formatNumber(numbers.grossPnL1R, 2)} USDT`)}
+              ${card('2R', formatNumber(numbers.target2, 4), `≈ ${formatNumber(numbers.grossPnL2R, 2)} USDT`)}
+              ${card('3R', formatNumber(numbers.target3, 4), `≈ ${formatNumber(numbers.grossPnL3R, 2)} USDT`)}
+            </div>
+          </div>
+        `;
+      }
+
+      function setDirection(direction) {
+        state.direction = direction;
+        els.longBtn.classList.toggle('active', direction === 'long');
+        els.shortBtn.classList.toggle('active', direction === 'short');
+        render();
+      }
+
+      function buildShareText() {
+        const numbers = calculate();
+        if (!numbers.valid) return 'Заполни поля корректно';
+
+        return [
+          'Калькулятор риска by Alpha',
+          `Направление: ${state.direction === 'long' ? 'Long' : 'Short'}`,
+          `Вход: ${numbers.parsed.entryPrice}`,
+          `Стоп: ${numbers.parsed.stopPrice}`,
+          `Риск: ${formatNumber(numbers.riskAmount, 2)} USDT`,
+          `Позиция: ${formatNumber(numbers.positionValue, 2)} USDT`,
+          `Маржа: ${formatNumber(numbers.requiredMargin, 2)} USDT`,
+          `Объём: ${formatNumber(numbers.quantity, 6)}`,
+        ].join('\n');
+      }
+
+      function shareResult() {
+        const text = buildShareText();
+        try {
+          if (tg && tg.showPopup) {
+            tg.showPopup({
+              title: 'Расчёт готов',
+              message: text,
+              buttons: [{ type: 'ok' }],
+            });
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            alert('Расчёт скопирован в буфер обмена');
+          });
+        } else {
+          alert(text);
+        }
+      }
+
+      function initTelegram() {
+        if (!tg) return;
+
+        try {
+          tg.ready();
+          tg.expand();
+          tg.setHeaderColor && tg.setHeaderColor('#020617');
+          tg.setBackgroundColor && tg.setBackgroundColor('#020617');
+          els.telegramStatus.textContent = 'Запущено внутри Telegram';
+        } catch (err) {
+          console.error('Telegram init error', err);
+        }
+      }
+
+      [els.balance, els.riskPercent, els.entryPrice, els.stopPrice, els.leverage].forEach((input) => {
+        input.addEventListener('input', render);
+      });
+
+      els.longBtn.addEventListener('click', () => setDirection('long'));
+      els.shortBtn.addEventListener('click', () => setDirection('short'));
+      els.shareBtn.addEventListener('click', shareResult);
+      els.fullscreenBtn.addEventListener('click', () => {
+        try {
+          if (tg && tg.requestFullscreen) tg.requestFullscreen();
+          else if (tg && tg.expand) tg.expand();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      initTelegram();
+      render();
+    </script>
+  </body>
+</html>
